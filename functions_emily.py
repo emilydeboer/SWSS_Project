@@ -27,9 +27,7 @@ def downloadsdata(year):
         data: all keys and data from omniweb for the specified year
         [format: dictionary]
     '''
-    
-    # written by Emily
-    
+        
     # downloads data
     start_time = dt.datetime(year, 1, 1)
     end_time = dt.datetime(year, 12, 31)
@@ -78,10 +76,12 @@ def selectweek(data, week_number):
         if starttime <= times_array[n] <= endtime:
             timestamp.append(times_array[n])
             symhstamp.append(symh_array[n])
-            alstamp.append(al_array)
+            alstamp.append(al_array[n])
     
     # new dictionary data -- SAME keys
     data_newdictionary = {'times': timestamp, 'sym_h': symhstamp, 'al': alstamp}
+
+    # plt.plot(data_newdictionary['times'], data_newdictionary['sym_h'])
 
     return data_newdictionary, week_number
 
@@ -111,17 +111,32 @@ def countstorm(data, threshold = -100):
         
     index_start = []
     index_end = []
-            
+           
     # loop tofind index of start and end time of storm
     for i in range(len(mask)-1): 
+        if i == 0 and mask[i] == True:
+            # if a storm is at the start of the week and doesn't start with False
+            index_start.append(i)
+            condition = True
         if mask[i] == False and mask[i+1] == True:
             index_start.append(i) # getting all the start times of storms
         if mask[i] == True and mask[i+1] == False:
             index_end.append(i) # this is going to get all the end times of storms
+        if i == len(mask)-1 and mask[i] == True:
+            # if the storm is at the end of the week and doesn't end with False
+            index_end.append(i)
            
+    # print(index_start)
+    # print(index_end)
+    
     hours = 12
     delta = dt.timedelta(0, 0, 0, 0, 0, hours)
         
+    start_time = []
+    end_time = []
+    # print(mask)
+    # print(index_start)
+    
     # loop to count storm ONLY IF the end/start time are 12 hrs apart
     if (mask == True).any():
         count_of_storms = 1
@@ -137,13 +152,13 @@ def countstorm(data, threshold = -100):
                 
         index_end_final.append(index_end[-1])
         
-        print(len(index_end_final))
-        print(len(index_start_final))
+        # print(len(index_end_final))
+        # print(len(index_start_final))
         
         start_time = [time_array[i] for i in index_start_final]
         end_time = [time_array[i] for i in index_end_final]
-        print(start_time)
-        print(end_time)
+        # print(start_time)
+        # print(end_time)
 
     else:
         count_of_storms = 0
@@ -158,4 +173,27 @@ def countstorm(data, threshold = -100):
     # add index of start and end of each storm
     return count_of_storms, start_time, end_time
 
+def storm_per_week(data):
+    weeks = [x+1 for x in range(52)]
+    count_per_week = []
     
+    year = data['times'][0].year
+    
+    for week in weeks:
+        data_cropped, week_number = selectweek(data, week)
+        num, start, end = countstorm(data_cropped)
+        
+        count_per_week.append(num)
+    
+    # plt.plot(week, count_per_week)
+    print(' length of week', len(weeks))
+    print('length of count', len(count_per_week))
+    print(sum(count_per_week))
+    
+    plt.bar(weeks, count_per_week)
+    plt.xlabel('Week Number')
+    plt.ylabel('Number of Storms')
+    plt.title('Storm Count for {}'.format(year))
+    
+    return weeks, count_per_week
+ 
